@@ -4,7 +4,7 @@
 #include <time.h>
 #include <regex>
 #include <string_view>
-
+#include <Windows.h>
 #include "Stack.h"
 
 using namespace std;
@@ -16,6 +16,16 @@ void printSeparator() {
 	cout << endl << "--------------------------------------------------" << endl;
 }
 
+void printStack(Stack* s) {
+	int* arr = s->toArray();
+	printSeparator();
+	for (int i = 0; i < s->getLength(); i++) {
+		cout << arr[i] << " ";
+	}
+	printSeparator();
+	cout << endl;
+}
+
 
 int inputInt(string prompt, int from=INT_MIN, int to=INT_MAX, bool checkBetween=false) {
 	static const regex re(R"(^-?[0-9]+)"s);
@@ -24,10 +34,10 @@ int inputInt(string prompt, int from=INT_MIN, int to=INT_MAX, bool checkBetween=
 		smatch match;
 		cout << prompt;
 		getline(cin, input);
-		string_view input_view(input);
 		if (regex_match(input, match, re)) 
 		{
 			int value = stoi(input);
+			if (!checkBetween) return value;
 			if (checkBetween and (value >= from) and (value <= to)) return value;
 		}
 		cerr << "Incorrect input. Try again..." << endl;
@@ -96,7 +106,10 @@ Stack* createNewStack() {
 	Stack* s = new Stack();
 	char choice = inputYesNo("Fill by random numbers[y/n]?");
 	switch (choice) {
-		case 'y': fillStackByRandomNumbers(s); break;
+		case 'y': 
+			fillStackByRandomNumbers(s); 
+			printStack(s); 
+			break;
 		case 'n': break;
 		default: break;
 	}
@@ -107,16 +120,6 @@ Stack* createNewStack() {
 void pushToStack(Stack* s) {
 	int value = inputInt("New number: ");
 	s->push(value);
-}
-
-void printStack(Stack* s) {
-	int* arr = s->toArray();
-	printSeparator();
-	for (int i = 0; i < s->getLength(); i++) {
-		cout << arr[i] << " ";
-	}
-	printSeparator();
-	cout << endl;
 }
 
 
@@ -146,6 +149,8 @@ void popElement(Stack *myStack) {
 
 
 int main() {
+	SetConsoleCP(1251);
+	SetConsoleOutputCP(1251);
 	srand(time(NULL));
 	if (mainMenu()) {
 		Stack *myStack = new Stack();
@@ -171,3 +176,20 @@ int main() {
 
 	return 0;
 }
+
+
+
+//void printMenu() {
+//	printSeparator();
+//	cout << "Menu:" << endl;
+//	cout << "1.Create New LinkedList" << endl;
+//	cout << "2.Add element at the begin of LinkedList" << endl;
+//	cout << "3.Add element at the end of LinkedList" << endl;
+//	cout << "4.Pop element from the begin of LinkedList" << endl;
+//	cout << "5.Pop element from the end of LinkedList" << endl;
+//	cout << "6.Print LinkedList from begin to end" << endl;
+//	cout << "7.Print LinkedList from end to begin" << endl;
+//	cout << "8.Task: swap min and max value in LinkedList" << endl;
+//	cout << "9.Exit program" << endl;
+//	//cout << ">>> ";
+//}
