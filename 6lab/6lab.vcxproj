@@ -129,6 +129,10 @@
   <ItemGroup>
     <ClCompile Include="6lab.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="binaryTree.h" />
+    <ClInclude Include="input.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

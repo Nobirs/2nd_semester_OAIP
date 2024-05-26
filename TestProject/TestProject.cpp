@@ -1,194 +1,420 @@
 ﻿#include <iostream>
-#include <vector>
-#include <random>
-#include <time.h>
+#include <fstream>
+#include <string>
+#include <algorithm>
+#include <limits>
 #include <regex>
-#include <Windows.h>
-#include "stack.h"
 
 using namespace std;
 
-#define DEFAULT_PROMPT ">>>"
+struct Schedule
+{
+    string searchKey;
+    string number;
+    string plain;
+    string destination;
+    string time;
+};
 
-
-void printSeparator() {
-	cout << endl << "--------------------------------------------------" << endl;
+void File(const Schedule flights[], int count, const string& filename)
+{
+    ofstream file(filename);
+    if (!file)
+    {
+        cout << "не получилось открыть фйдл;(" << endl;
+        return;
+    }
+    else
+    {
+        if (file.is_open())
+        {
+            for (int i = 0; i < count; i++)
+            {
+                file << "номер рейса: " << flights[i].number << endl;
+                file << "самолет: " << flights[i].plain << endl;
+                file << "пункт назначения: " << flights[i].destination << endl;
+                file << "время отправки: " << flights[i].time << endl;
+            }
+            file.close();
+            cout << "данные записаны в файл" << endl;
+        }
+    }
 }
 
-void printStack(Stack* s) {
-	int* arr = s->toArray();
-	printSeparator();
-	for (int i = 0; i < s->getLength(); i++) {
-		cout << arr[i] << " ";
-	}
-	printSeparator();
-	cout << endl;
+void viewFile()
+{
+    ifstream file("flights.txt");
+    if (file)
+    {
+        string line;
+        while (getline(file, line))
+        {
+            cout << line << endl;
+        }
+        file.close();
+    }
+    else
+    {
+        cout << "не получилось открыть фйдл;(" << endl;
+    }
 }
 
+void add(Schedule flights[], int& count)
+{
+    if (count >= 100)
+    {
+        cout << "колличество рейсов привышено" << endl;
+        return;
+    }
 
-int inputInt(string prompt, int from = INT_MIN, int to = INT_MAX, bool checkBetween = false) {
-	static const regex re(R"(^-?[0-9]+)"s);
-	while (true) {
-		string input;
-		smatch match;
-		cout << prompt;
-		getline(cin, input);
-		if (regex_match(input, match, re))
-		{
-			int value = stoi(input);
-			if (!checkBetween) return value;
-			if (checkBetween && (value >= from) && (value <= to)) return value;
-		}
-		cerr << "неправильно, попробуйте ещё..." << endl;
-	}
+    Schedule flight;
+    cout << "введите номер рейса: ";
+    cin >> flight.number;
+    cout << "введите вид самолета: ";
+    cin >> flight.plain;
+    cout << "введите пункт назначения: ";
+    cin >> flight.destination;
+    transform(flight.destination.begin(), flight.destination.end(), flight.destination.begin(), std::tolower);
+
+    //cout << "введите время отпраки(часы:минуты): ";
+    string timeString;
+    //cin >> timeString;
+
+    regex timeRegex("\\d{2}:\\d{2}");
+
+    while (true) {
+        cout << "введите время отправки (часы:минуты): ";
+        string timeString;
+        cin >> timeString;
+
+        if (!regex_match(timeString, timeRegex)) {
+            cout << "время введено неправильно. Повторите попытку." << endl;
+            continue;
+        }
+
+        int hours = stoi(timeString.substr(0, 2));
+        int minutes = stoi(timeString.substr(3, 2));
+
+        if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+            cout << "время введено неправильно. Повторите попытку." << endl;
+            continue;
+        }
+
+        break;
+    }
+    cout << "\n\n";
+
+    flight.time = timeString;
+
+    flights[count] = flight;
+    count++;
+
+    cout << "рейс добавлен!" << endl;
 }
 
+void linearSearch(const Schedule flights[], int count, const string& destination)
+{
 
-string inputYesNo(string prompt) {
-	static const regex re(R"((да|нет|Да|Нет))"s);
-	while (true) {
-		string input;
-		smatch match;
-		cout << prompt;
-		getline(cin, input);
-		if (regex_match(input, match, re))
-		{
-			return input;
-		}
-		else
-		{
-			cerr << "неправильно, попробуйте ещё..." << endl;
-		}
-	}
+    bool found = false;
+
+    cout << "результаты поиска \"" << destination << "\":" << endl;
+
+    for (int i = 0; i < count; i++)
+    {
+        if (flights[i].destination == destination)
+        {
+            cout << "номер рейса: " << flights[i].number << endl;
+            cout << "вид самолета: " << flights[i].plain << endl;
+            cout << "пункт назначения: " << flights[i].destination << endl;
+            cout << "время отправки: " << flights[i].time << endl;
+            cout << endl;
+            found = true;
+        }
+    }
+
+    if (!found)
+    {
+        cout << "рейсы не найдены" << endl;
+    }
 }
 
-
-bool mainMenu() {
-	string choice = inputYesNo("запустить программу[да/нет]? ");
-	if (choice == "да" or choice == "Да") {
-		return true;
-	}
-	else return false;
-	/*switch (choice) {
-	case 'д': return true;
-	case 'н': return false;
-	default: return false;*/
-	//}
+void selectionSort(Schedule flights[], int count)
+{
+    if (count <= 1)
+    {
+        cout << "слишком мало рейсов для сортировки" << endl;
+        return;
+    }
+    for (int i = 0; i < count - 1; i++)
+    {
+        int minIndex = i;
+        for (int j = i + 1; j < count; j++)
+        {
+            if (flights[j].destination < flights[minIndex].destination)
+            {
+                minIndex = j;
+            }
+        }
+        Schedule temp = flights[minIndex];
+        flights[minIndex] = flights[i];
+        flights[i] = temp;
+    }
+    cout << "массив рейсов отсортирован методом прямого выбора " << endl;
 }
 
-void printMenu() {
-	printSeparator();
-	cout << "меню:" << endl;
-	cout << "1.создать стек" << endl;
-	cout << "2.добавить элемент(push)" << endl;
-	cout << "3.вывести стек" << endl;
-	cout << "4.сортировка" << endl;
-	cout << "5.разделить на четные и нечетные" << endl;
-	cout << "6.удалить элемент(pop)" << endl;
-	cout << "7.выйти" << endl;
-	//cout << ">>> ";
+int binarySearch(const Schedule flights[], const int count, const string& searchKey)
+{
+    if (searchKey.empty())
+    {
+        cout << "ключ поиска не введен" << endl;
+        return -1;
+    }
+    int left = 0;
+    int right = count - 1;
+
+    while (left <= right)
+    {
+        int mid = (left + right) / 2;
+        if (flights[mid].destination == searchKey)
+        {
+            return mid;
+        }
+        else if (flights[mid].destination < searchKey)
+        {
+            left = mid + 1;
+        }
+        else
+        {
+            right = mid - 1;
+        }
+    }
+
+    return -1;
 }
 
+void viewFlightsByDestination(Schedule flights[], int count, const string& destination)
+{
+    bool found = false;
 
-void sortMenu() {
-	cout << "как сортировать: " << endl;
-	cout << "1.по адресу" << endl;
-	cout << "2.по значению" << endl;
-	//cout << ">>> ";
+    cout << "рейсы в пункт назначения \"" << destination << "\":" << endl;
+
+    for (int i = 0; i < count; i++)
+    {
+        if (flights[i].destination == destination)
+        {
+            found = true;
+            cout << "пункт назначения: " << flights[i].destination << endl;
+            cout << "время отпраки: " << flights[i].time << endl;
+        }
+    }
+
+    if (!found)
+        cout << "нет рейсов в ваш пункт назначения." << endl;
 }
 
-void fillStackByRandomNumbers(Stack* s) {
-	int numbers = inputInt("сколько чисел: ", 1, 1000, true);
-	for (int i = 0; i < numbers; i++) {
-		s->push(rand() % 100);
-	}
+int partition(Schedule flights[], int low, int high)
+{
+    string pivot = flights[high].destination;
+    int i = low - 1;
+
+    for (int j = low; j <= high - 1; j++)
+    {
+        if (flights[j].destination < pivot)
+        {
+            i++;
+            swap(flights[i], flights[j]);
+        }
+        else if (flights[j].destination == pivot && flights[j].time < flights[high].time)
+        {
+            i++;
+            swap(flights[i], flights[j]);
+        }
+    }
+
+    swap(flights[i + 1], flights[high]);
+    return i + 1;
 }
 
-Stack* createNewStack() {
-	Stack* s = new Stack();
-	string choice = inputYesNo("заполнить случайно[да/нет]?");
-	if (choice == "да" or choice == "Да") {
-		fillStackByRandomNumbers(s);
-		printStack(s);
-	}
-	return s;
+void quickSort(Schedule flights[], int low, int high)
+{
+    if (low < high)
+    {
+        int pi = partition(flights, low, high);
+
+        quickSort(flights, low, pi - 1);
+        quickSort(flights, pi + 1, high);
+    }
 }
 
+void quickSortWrapper(Schedule flights[], int count)
+{
+    if (count <= 1)
+    {
+        cout << "слишком мало рейсов для сортировки" << endl;
+        return;
+    }
 
-void pushToStack(Stack* s) {
-	int value = inputInt("число: ");
-	s->push(value);
+    quickSort(flights, 0, count - 1);
+
+    cout << "массив рейсов отсортирован методом QuickSort." << endl;
 }
 
+int main()
+{
+    setlocale(0, "rus");
+    Schedule flights[100];
+    int count = 0;
+    while (1)
+    {
 
-void sortStack(Stack* myStack) {
-	cout << endl << "было: ";
-	printStack(myStack);
-	sortMenu();
-	int choice = inputInt(DEFAULT_PROMPT, 1, 2, true);
-	switch (choice) {
-	case 1: myStack->sortByPointers(); break;
-	case 2: myStack->sortByValues(); break;
-	default: cout << "неправильный ввод" << endl;
-	}
-	cout << endl << "стало: ";
-	printStack(myStack);
-}
+        int q, m;
+        cout << "введите номер:" << endl
+            << "1 - запуск" << endl
+            << "2 - выход" << endl;
+        while (!(cin >> q) || cin.peek() != '\n')
+        {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "неверный ввод" << endl;
+            cout << "введите номер" << endl;
+        }
+        switch (q)
+        {
+        case 1:
+            while (1)
+            {
+                cout << "1. добавить рейс" << endl;
+                cout << "2. записать данные в файл" << endl;
+                cout << "3. читать данные из файла" << endl;
+                cout << "4. двоичный поиск" << endl;
+                cout << "5. сортировка массива методами прямого выбора в порядке убывания и запись в файл с отсортированный массив" << endl;
+                cout << "6. сортировка QuickSort в порядке возрастания" << endl;
+                cout << "7. линейный поиск" << endl;
+                cout << "8. выход" << endl;
+                cout << "введите выбор: ";
 
-void popElement(Stack* myStack) {
-	if (myStack->getLength() < 1) {
-		cout << endl << "стек пустой..." << endl;
-	}
-	else {
-		cout << endl << "вернуло: " << myStack->pop() << endl;
-	}
-}
+                while (!(cin >> m) || cin.peek() != '\n')
+                {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "неверный ввод " << endl;
+                    cout << "Введите номер " << endl;
+                }
+                switch (m)
+                {
+                case 1:
+                    cout << "введите данные рейса" << endl;
+                    add(flights, count);
+                    break;
+                case 2:
+                    File(flights, count, "flights.txt");
+                    break;
+                case 3:
+                    viewFile();
+                    break;
+                case 4:
+                    if (count > 0)
+                    {
+                        string destination;
+                        cout << "введите пункт назначения для двоичного поиска: ";
+                        cin >> destination;
+                        if (destination.empty())
+                        {
+                            cout << "вы не ввели пункт назначения" << endl;
+                            return 0;
+                        }
+                        int result = binarySearch(flights, count, destination);
+                        viewFlightsByDestination(flights, count, destination);
+                        if (result != -1)
+                        {
+                            cout << "найдено " << endl;
+                        }
+                        else
+                        {
+                            cout << "не найдено" << endl;
+                        }
+                    }
+                    else
+                    {
+                        cout << "нет данных о рейсах" << endl;
+                    }
+                    break;
+                case 5:
+                    if (count > 0)
+                    {
+                        string destination;
+                        cout << "\n\nвведите пункт назначения: ";
+                        cin >> destination;
+                        if (destination.empty())
+                        {
+                            cout << "вы не ввели пункт назначения" << endl;
+                            return 0;
+                        }
+                        selectionSort(flights, count);
+                        viewFlightsByDestination(flights, count, destination);
+                        string filename = "sorted_flights.txt";
+                        File(flights, count, filename);
+                    }
+                    else
+                    {
+                        cout << "нет данных о рейсах" << endl;
+                    }
+                    break;
+                case 6:
+                    if (count > 0)
+                    {
+                        string destination;
+                        cout << "введите пункт назначения: ";
+                        cin >> destination;
+                        if (destination.empty())
+                        {
+                            cout << "вы не ввели пункт назначения" << endl;
+                            return 0;
+                        }
+                        quickSortWrapper(flights, count);
+                        viewFlightsByDestination(flights, count, destination);
+                    }
+                    else
+                    {
+                        cout << "нет данных о рейсах" << endl;
+                    }
+                    break;
+                case 7:
+                    if (count > 0)
+                    {
+                        string destination;
+                        cout << "введите пункт назначения: ";
+                        cin >> destination;
+                        if (destination.empty())
+                        {
+                            cout << "вы не ввели пункт назначения" << endl;
+                            return 0;
+                        }
+                        transform(destination.begin(), destination.end(), destination.begin(), ::tolower);
+                        linearSearch(flights, count, destination);
+                    }
+                    else
+                    {
+                        cout << "недостаточно данных для поиска" << endl;
+                        cout << "/n";
+                    }
+                    break;
+                case 8:
+                    return 0;
+                default:
+                    cout << "неверный ввод" << endl;
+                    break;
+                }
+            };
+            break;
+        case 2:
+            return 0;
+            break;
+        default:
+            cout << "неверный ввод" << endl;
+            break;
+        }
+    }
 
-
-
-int main() {
-	SetConsoleCP(1251);
-	SetConsoleOutputCP(1251);
-	cout << "привет" << endl;
-	srand(time(NULL));
-	while (mainMenu()) {
-		Stack* myStack = new Stack();
-		Stack odd, even, newStack;
-		int stop = false;
-		while (!stop) {
-			printMenu();
-
-			int choice = inputInt(DEFAULT_PROMPT, 1, 7, true);
-
-			switch (choice) {
-			case 1: myStack = createNewStack();  break;
-			case 2: pushToStack(myStack); break; // DONE
-			case 3: printStack(myStack); break; // DONE
-			case 4: sortStack(myStack); break; // DONE
-			case 5:
-			{
-				int len = myStack->getLength();
-				for (int i = 0; i < len; i++) {
-					int val = myStack->pop();
-					if (val % 2 == 0) even.push(val);
-					else odd.push(val);
-					newStack.push(val);
-				}
-				myStack = &newStack;
-				cout << "четные:" << endl;
-				printStack(&even);
-				cout << "нечетные:" << endl;
-				printStack(&odd);
-				cout << "исходный стек:" << endl;
-				printStack(myStack);
-				break;
-			}
-			case 6: popElement(myStack); break;
-			case 7: stop = true; break;
-			}
-		}
-	}
-
-
-	return 0;
+    return 0;
 }

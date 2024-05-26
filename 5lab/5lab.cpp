@@ -13,24 +13,6 @@ using namespace std;
 namespace fs = std::filesystem;
 
 
-
-int printMenu() {
-    cout << "**************************************************" << endl;
-    cout << "*                   Меню                         *" << endl;
-    cout << "**************************************************" << endl;
-    cout << "* 1. Создание файла                              *" << endl;
-    cout << "* 2. Просмотр файла                              *" << endl;
-    cout << "* 3. Добавление в файл                           *" << endl;
-    cout << "* 4. Линейный поиск                              *" << endl;
-    cout << "* 5. Сортировка (прямой выбор)                   *" << endl;
-    cout << "* 6. Сортировка (QuickSort)                      *" << endl;
-    cout << "* 7. Двоичный поиск                              *" << endl;
-    cout << "* 8. Выход                                       *" << endl;
-    cout << "**************************************************" << endl;
-    int choice = inputInt("Выберите пункт меню: ", 1, 8, true);
-    return choice;
-}
-
 string readLine(string prompt) {
     cout << prompt;
     string buffer;
@@ -39,7 +21,7 @@ string readLine(string prompt) {
 }
 
 void createFile(string fileName) {
-    if (!fs::exists(fileName)) {
+    if (fs::exists(fileName)) {
         int choice = inputYesNo("Файл уже существует. Перезаписать его[y/n]?");
         if (choice == 1) {
             fstream* file = new fstream(fileName, ios::out);
@@ -133,10 +115,17 @@ void quickSort(vector<Employee>& arr, int low, int high) {
     }
 }
 
-
-
-
-
+bool compareStrings(string str1, string str2)
+{
+    if (str1.length() != str2.length()) return false;
+    for (int i = 0; i < str1.length(); i++)
+    {
+        if (std::toupper(str1[i]) != std::toupper(str2[i])) {
+            return false;
+        }
+    }
+    return true;
+}
 
 
 void linearSearch(string fileName) {
@@ -148,14 +137,15 @@ void linearSearch(string fileName) {
         if (file.is_open()) {
             Employee e;
             string nameToFind = readLine("Input name to find: ");
+            bool wasFound = false;
             while (file >> e) {
-                if (e.getFullName() == nameToFind) {
+                if (compareStrings(e.getFullName(), nameToFind)) {
                     cout << "Совпадение найдено:" << endl;
                     e.printEmployee();
-                    return;
+                    wasFound = true;
                 }
             }
-            cout << "Совпадений не найдено..." << endl;
+            if(!wasFound) cout << "Совпадений не найдено..." << endl;
             file.close();
         }
     }
@@ -181,6 +171,11 @@ void selectionSort(string fileName) {
             while (file >> e) {
                 if (e.getEmployeeId() != -1) arr.push_back(e);
                 else break;
+            }
+            if (arr.size() == 0)
+            {
+                cout << "Файл пустой!" << endl;
+                return;
             }
             cout << "--------------Before---------------";
             printArray(arr);
@@ -255,6 +250,11 @@ void vectorToFile(vector<Employee>& arr, string fileName) {
 
 void quickSort(string fileName) {
     vector<Employee> arr = vectorFromFile(fileName);
+    if (arr.size() == 0)
+    {
+        cout << "Нет данных для сортировки!" << endl;
+        return;
+    }
     cout << std::endl << "-----------------Before--------------" << std::endl;
     printArray(arr);
     quickSort(arr, 0, arr.size() - 1);
@@ -290,6 +290,11 @@ int binarySearchRecursive(vector<Employee>& arr, int low, int high, double targe
 void binarySearch(string fileName) {
     double salary = inputDouble("Input salary to find: ", 0, INT_MAX, true);
     vector<Employee> arr = vectorFromFile(fileName);
+    if (arr.size() == 0)
+    {
+        cout << "Файл пустой!" << endl;
+        return;
+    }
     quickSort(arr, 0, arr.size() - 1);
     int index = binarySearchRecursive(arr, 0, arr.size() - 1, salary);
     if (index == -1) {
@@ -304,12 +309,46 @@ void binarySearch(string fileName) {
 }
 
 
+int printMenu() {
+    cout << "**************************************************" << endl;
+    cout << "*                   Меню                         *" << endl;
+    cout << "**************************************************" << endl;
+    cout << "* 1. Создание файла                              *" << endl;
+    cout << "* 2. Просмотр файла                              *" << endl;
+    cout << "* 3. Добавление в файл                           *" << endl;
+    cout << "* 4. Линейный поиск                              *" << endl;
+    cout << "* 5. Сортировка (прямой выбор)                   *" << endl;
+    cout << "* 6. Сортировка (QuickSort)                      *" << endl;
+    cout << "* 7. Двоичный поиск                              *" << endl;
+    cout << "* 8. Зарплаты                                    *" << endl;
+    cout << "* 9. Выход                                       *" << endl;
+    cout << "**************************************************" << endl;
+    int choice = inputInt("Выберите пункт меню: ", 1, 9, true);
+    return choice;
+}
+
+void printSalary(string fileName) {
+    vector<Employee> arr = vectorFromFile(fileName);
+    if (!arr.empty())
+    {
+        for (auto emp : arr)
+        {
+            cout << emp.getFullName() << " -> " << emp.getSalary() << endl;
+        }
+    }
+    else
+    {
+        cout << "Файл пустой!" << endl;
+    }
+
+}
+
 int main() {
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
 
     string fileName = "employees.txt";
-    vector<Employee> employees;
+    //vector<Employee> employees;
 
     while (inputYesNo("Do you wanna start program[y/n]?")) {
         bool flag = true;
@@ -322,7 +361,8 @@ int main() {
             case 5: selectionSort(fileName); break;
             case 6: quickSort(fileName); break;
             case 7: binarySearch(fileName); break;
-            case 8: flag = false; break;
+            case 8: printSalary(fileName); break;
+            case 9: flag = false; break;
             }
         }
     }
